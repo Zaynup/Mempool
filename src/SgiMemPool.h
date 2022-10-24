@@ -17,7 +17,9 @@ public:
     {
         void *result = malloc(n);
         if (0 == result)
+        {
             result = _S_oom_malloc(n);
+        }
         return result;
     }
 
@@ -30,7 +32,9 @@ public:
     {
         void *result = realloc(p, new_sz);
         if (0 == result)
+        {
             result = _S_oom_realloc(p, new_sz);
+        }
         return result;
     }
 
@@ -79,7 +83,6 @@ void *__malloc_alloc_template<__inst>::_S_oom_realloc(void *p, size_t n)
         if (0 == my_malloc_handler)
         {
             throw std::bad_alloc();
-            ;
         }
         (*my_malloc_handler)();
         result = realloc(p, n);
@@ -108,21 +111,27 @@ public:
         n = n * sizeof(T);
         void *ret = 0;
 
+        // 大于128 bytes就调用第一级配置器
         if (n > (size_t)MAX_BYTES_)
         {
             ret = malloc_alloc::allocate(n);
         }
         else
         {
+            // 小于128 bytes就寻找16个free-lists中适当的一个。
             Obj_ *volatile *my_free_list = S_free_list_ + S_Freelist_Index(n);
 
-            std::lock_guard<std::mutex> guard(mtx); //智能锁
+            std::lock_guard<std::mutex> guard(mtx); // 智能锁
 
             Obj_ *result = *my_free_list;
             if (result == 0)
+            {
+                // 没找到可用的free-list，就准备重新填充free-list
                 ret = S_Refill(S_Round_Up(n));
+            }
             else
             {
+                // 在当前free-list中找到的话就返回，并调整free-list指向。
                 *my_free_list = result->M_free_list_link_;
                 ret = result;
             }
@@ -182,13 +191,13 @@ public:
     }
 
 private:
-    // 将bytes上调至最临近的8的倍数
+    // 将 bytes 上调至最临近的8的倍数
     static size_t S_Round_Up(size_t bytes)
     {
         return (((bytes) + (size_t)ALIGN_ - 1) & ~((size_t)ALIGN_ - 1));
     }
 
-    // 返回bytes大小的小额区块位于free-list中的编号
+    // 返回 bytes 大小的小额区块位于 free-list 中的编号 + (size_t)ALIGN_ - 1)
     static size_t S_Freelist_Index(size_t bytes)
     {
         return (((bytes) + (size_t)ALIGN_ - 1) / (size_t)ALIGN_ - 1);
@@ -198,6 +207,10 @@ private:
     static void *S_Refill(size_t n)
     {
         int nobjs = 20;
+
+        // 调用 chunk_alloc()，尝试取得 nobjs 个区块作为 free-list 的新节点。
+        // 参数nobjs是 pass by reference 传下去的，因为有可能分配不到20个节点，
+        // 所以要返回实际节点个数
         char *chunk = S_Chunk_Alloc(n, nobjs);
         Obj_ *volatile *my_free_list;
         Obj_ *result;
@@ -302,7 +315,7 @@ private:
     };
     enum
     {
-        NFREELISTS_ = 16 // MAX_BYTES_/ALIGN_  自由链表（数组节点）的个数
+        NFREELISTS_ = 16 // MAX_BYTES_ / ALIGN_  自由链表（数组节点）的个数
     };
 
     // 每一个内存块的头信息，M_free_list_link_存储下一个内存块的地址
