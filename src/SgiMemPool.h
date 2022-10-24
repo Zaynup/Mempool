@@ -131,7 +131,7 @@ public:
         return (T *)ret;
     }
 
-    //归还内存块
+    // 归还内存块
     void deallocate(void *p, size_t n)
     {
         if (n > (size_t)MAX_BYTES_)
@@ -148,7 +148,7 @@ public:
         }
     }
 
-    //内存扩容或者缩容
+    // 内存扩容或者缩容
     static void *reallocate(void *p, size_t old_sz, size_t new_sz)
     {
         void *result;
@@ -169,32 +169,32 @@ public:
         return (result);
     }
 
-    //对象构造
+    // 对象构造
     void construct(T *p, const T &val)
     {
         new (p) T(val);
     }
 
-    //对象析构
+    // 对象析构
     void destroy(T *p)
     {
         p->~T();
     }
 
 private:
-    //将bytes上调至最临近的8的倍数
+    // 将bytes上调至最临近的8的倍数
     static size_t S_Round_Up(size_t bytes)
     {
         return (((bytes) + (size_t)ALIGN_ - 1) & ~((size_t)ALIGN_ - 1));
     }
 
-    //返回bytes大小的小额区块位于free-list中的编号
+    // 返回bytes大小的小额区块位于free-list中的编号
     static size_t S_Freelist_Index(size_t bytes)
     {
         return (((bytes) + (size_t)ALIGN_ - 1) / (size_t)ALIGN_ - 1);
     }
 
-    //把开辟的连续内存划分成对应大小内存块并连接，添加到对应自由链表节点中
+    // 把开辟的连续内存划分成对应大小内存块并连接，添加到对应自由链表节点中
     static void *S_Refill(size_t n)
     {
         int nobjs = 20;
@@ -230,7 +230,7 @@ private:
         return (result);
     }
 
-    //开辟连续内存空间
+    // 开辟连续内存空间
     static char *S_Chunk_Alloc(size_t size, int &nobjs)
     {
         char *result;
@@ -294,16 +294,16 @@ private:
 private:
     enum
     {
-        ALIGN_ = 8
-    }; // 自由链表是从8字节开始以8字节为对齐方式一直扩充到128字节
+        ALIGN_ = 8 // 自由链表是从8字节开始以8字节为对齐方式一直扩充到128字节
+    };
     enum
     {
-        MAX_BYTES_ = 128
-    }; // 内存池最大的内存块
+        MAX_BYTES_ = 128 // 内存池最大的内存块
+    };
     enum
     {
-        NFREELISTS_ = 16
-    }; // MAX_BYTES_/ALIGN_  自由链表（数组节点）的个数
+        NFREELISTS_ = 16 // MAX_BYTES_/ALIGN_  自由链表（数组节点）的个数
+    };
 
     // 每一个内存块的头信息，M_free_list_link_存储下一个内存块的地址
     union Obj_
@@ -312,7 +312,7 @@ private:
         char M_client_data_[1];
     };
 
-    //已分配的内存内存块的使用情况
+    // 已分配的内存内存块的使用情况
     static char *S_start_free_;
     static char *S_end_free_;
     static size_t S_heap_size_;
