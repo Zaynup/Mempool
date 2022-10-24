@@ -110,13 +110,13 @@ public:
         }
         else
         {
-            Obj_ *volatile *my_free_list = S_free_list_ + S_freelist_index_(n);
+            Obj_ *volatile *my_free_list = S_free_list_ + S_Freelist_Index(n);
 
             std::lock_guard<std::mutex> guard(mtx); //智能锁
 
             Obj_ *result = *my_free_list;
             if (result == 0)
-                ret = S_refill_(S_round_up_(n));
+                ret = S_Refill(S_Round_Up(n));
             else
             {
                 *my_free_list = result->M_free_list_link_;
@@ -136,7 +136,7 @@ public:
         }
         else
         {
-            Obj_ *volatile *my_free_list = S_free_list_ + S_freelist_index_(n);
+            Obj_ *volatile *my_free_list = S_free_list_ + S_Freelist_Index(n);
             Obj_ *q = (Obj_ *)p;
             std::lock_guard<std::mutex> guard(mtx); //智能锁
             q->M_free_list_link_ = *my_free_list;
@@ -154,7 +154,7 @@ public:
         {
             return (realloc(p, new_sz));
         }
-        if (S_round_up_(old_sz) == S_round_up_(new_sz))
+        if (S_Round_Up(old_sz) == S_Round_Up(new_sz))
         {
             return (p);
         }
@@ -170,6 +170,7 @@ public:
     {
         new (p) T(val);
     }
+
     //对象析构
     void destroy(T *p)
     {
@@ -178,22 +179,22 @@ public:
 
 private:
     //将bytes上调至最临近的8的倍数
-    static size_t S_round_up_(size_t bytes)
+    static size_t S_Round_Up(size_t bytes)
     {
         return (((bytes) + (size_t)ALIGN_ - 1) & ~((size_t)ALIGN_ - 1));
     }
 
     //返回bytes大小的小额区块位于free-list中的编号
-    static size_t S_freelist_index_(size_t bytes)
+    static size_t S_Freelist_Index(size_t bytes)
     {
         return (((bytes) + (size_t)ALIGN_ - 1) / (size_t)ALIGN_ - 1);
     }
 
     //把开辟的连续内存划分成对应大小内存块并连接，添加到对应自由链表节点中
-    static void *S_refill_(size_t n)
+    static void *S_Refill(size_t n)
     {
         int nobjs = 20;
-        char *chunk = S_chunk_alloc_(n, nobjs);
+        char *chunk = S_Chunk_Alloc(n, nobjs);
         Obj_ *volatile *my_free_list;
         Obj_ *result;
         Obj_ *current_obj;
@@ -204,7 +205,7 @@ private:
         {
             return (chunk);
         }
-        my_free_list = S_free_list_ + S_freelist_index_(n);
+        my_free_list = S_free_list_ + S_Freelist_Index(n);
 
         result = (Obj_ *)chunk;
         *my_free_list = next_obj = (Obj_ *)(chunk + n);
@@ -226,7 +227,7 @@ private:
     }
 
     //开辟连续内存空间
-    static char *S_chunk_alloc_(size_t size, int &nobjs)
+    static char *S_Chunk_Alloc(size_t size, int &nobjs)
     {
         char *result;
         size_t total_bytes = size * nobjs;
@@ -249,10 +250,10 @@ private:
         else
         {
             size_t bytes_to_get =
-                2 * total_bytes + S_round_up_(S_heap_size_ >> 4);
+                2 * total_bytes + S_Round_Up(S_heap_size_ >> 4);
             if (bytes_left > 0)
             {
-                Obj_ *volatile *my_free_list = S_free_list_ + S_freelist_index_(bytes_left);
+                Obj_ *volatile *my_free_list = S_free_list_ + S_Freelist_Index(bytes_left);
 
                 ((Obj_ *)S_start_free_)->M_free_list_link_ = *my_free_list;
 
@@ -267,14 +268,14 @@ private:
 
                 for (i = size; i <= (size_t)MAX_BYTES_; i += (size_t)ALIGN_)
                 {
-                    my_free_list = S_free_list_ + S_freelist_index_(i);
+                    my_free_list = S_free_list_ + S_Freelist_Index(i);
                     p = *my_free_list;
                     if (0 != p)
                     {
                         *my_free_list = p->M_free_list_link_;
                         S_start_free_ = (char *)p;
                         S_end_free_ = S_start_free_ + i;
-                        return (S_chunk_alloc_(size, nobjs));
+                        return (S_Chunk_Alloc(size, nobjs));
                     }
                 }
                 S_end_free_ = 0;
@@ -282,7 +283,7 @@ private:
             }
             S_heap_size_ += bytes_to_get;
             S_end_free_ = S_start_free_ + bytes_to_get;
-            return (S_chunk_alloc_(size, nobjs));
+            return (S_Chunk_Alloc(size, nobjs));
         }
     }
 
