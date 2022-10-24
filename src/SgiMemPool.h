@@ -13,32 +13,32 @@ private:
     static void (*__malloc_alloc_oom_handler)();
 
 public:
-    static void *allocate(size_t __n)
+    static void *allocate(size_t n)
     {
-        void *__result = malloc(__n);
-        if (0 == __result)
-            __result = _S_oom_malloc(__n);
-        return __result;
+        void *result = malloc(n);
+        if (0 == result)
+            result = _S_oom_malloc(n);
+        return result;
     }
 
-    static void deallocate(void *__p, size_t /* __n */)
+    static void deallocate(void *p, size_t)
     {
-        free(__p);
+        free(p);
     }
 
-    static void *reallocate(void *__p, size_t __old_sz, size_t __new_sz)
+    static void *reallocate(void *p, size_t old_sz, size_t new_sz)
     {
-        void *__result = realloc(__p, __new_sz);
-        if (0 == __result)
-            __result = _S_oom_realloc(__p, __new_sz);
-        return __result;
+        void *result = realloc(p, new_sz);
+        if (0 == result)
+            result = _S_oom_realloc(p, new_sz);
+        return result;
     }
 
-    static void (*__set_malloc_handler(void (*__f)()))()
+    static void (*set_malloc_handler(void (*f)()))()
     {
-        void (*__old)() = __malloc_alloc_oom_handler;
-        __malloc_alloc_oom_handler = __f;
-        return (__old);
+        void (*old)() = __malloc_alloc_oom_handler;
+        __malloc_alloc_oom_handler = f;
+        return (old);
     }
 };
 
@@ -46,43 +46,47 @@ template <int __inst>
 void (*__malloc_alloc_template<__inst>::__malloc_alloc_oom_handler)() = nullptr;
 
 template <int __inst>
-void *__malloc_alloc_template<__inst>::_S_oom_malloc(size_t __n)
+void *__malloc_alloc_template<__inst>::_S_oom_malloc(size_t n)
 {
-    void (*__my_malloc_handler)();
-    void *__result;
+    void (*my_malloc_handler)();
+    void *result;
 
     for (;;)
     {
-        __my_malloc_handler = __malloc_alloc_oom_handler;
-        if (0 == __my_malloc_handler)
+        my_malloc_handler = __malloc_alloc_oom_handler;
+        if (0 == my_malloc_handler)
         {
             throw std::bad_alloc();
         }
-        (*__my_malloc_handler)();
-        __result = malloc(__n);
-        if (__result)
-            return (__result);
+        (*my_malloc_handler)();
+        result = malloc(n);
+        if (result)
+        {
+            return (result);
+        }
     }
 }
 
 template <int __inst>
-void *__malloc_alloc_template<__inst>::_S_oom_realloc(void *__p, size_t __n)
+void *__malloc_alloc_template<__inst>::_S_oom_realloc(void *p, size_t n)
 {
-    void (*__my_malloc_handler)();
-    void *__result;
+    void (*my_malloc_handler)();
+    void *result;
 
     for (;;)
     {
-        __my_malloc_handler = __malloc_alloc_oom_handler;
-        if (0 == __my_malloc_handler)
+        my_malloc_handler = __malloc_alloc_oom_handler;
+        if (0 == my_malloc_handler)
         {
             throw std::bad_alloc();
             ;
         }
-        (*__my_malloc_handler)();
-        __result = realloc(__p, __n);
-        if (__result)
-            return (__result);
+        (*my_malloc_handler)();
+        result = realloc(p, n);
+        if (result)
+        {
+            return (result);
+        }
     }
 }
 typedef __malloc_alloc_template<0> malloc_alloc;
